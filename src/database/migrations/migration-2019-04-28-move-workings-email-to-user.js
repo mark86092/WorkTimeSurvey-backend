@@ -30,6 +30,9 @@ module.exports = async db => {
     }
 
     // update each user email
+    if (Object.keys(user_emails).length == 0) {
+        return;
+    }
     const bulk_ops = db.collection("users").initializeOrderedBulkOp();
     for (let facebook_id of Object.keys(user_emails)) {
         bulk_ops.find({ facebook_id: facebook_id }).update({
