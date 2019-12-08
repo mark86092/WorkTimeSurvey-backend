@@ -12,6 +12,9 @@ module.exports = async db => {
     console.log("expected nModified:", salary_work_times.length);
 
     // update each salary_work_time.user_id
+    if (salary_work_times.length == 0) {
+        return;
+    }
     const bulk_ops = db.collection("workings").initializeOrderedBulkOp();
     for (let salary_work_time of salary_work_times) {
         const facebook_id = salary_work_time.author.id;

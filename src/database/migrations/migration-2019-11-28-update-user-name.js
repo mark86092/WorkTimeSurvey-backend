@@ -17,6 +17,9 @@ module.exports = async db => {
         .toArray();
 
     // update each user.name
+    if (users.length == 0) {
+        return;
+    }
     const bulk_ops = db.collection("users").initializeOrderedBulkOp();
     for (let user of users) {
         const name = get(user, "facebook.name") || get(user, "google.name");
