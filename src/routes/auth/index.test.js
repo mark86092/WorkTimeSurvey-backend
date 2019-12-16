@@ -2,21 +2,12 @@ const { assert } = require("chai");
 const request = require("supertest");
 const sinon = require("sinon");
 const app = require("../../app");
-const { connectMongo } = require("../../models/connect");
-const ModelManager = require("../../models/manager");
 const facebook = require("../../libs/facebook");
 const jwt = require("../../utils/jwt");
+const { User } = require("../../models");
 
 describe("Auth", () => {
-    let db;
-    let user_model;
     let sandbox = null;
-
-    before(async () => {
-        ({ db } = await connectMongo());
-        const manager = new ModelManager(db);
-        user_model = manager.UserModel;
-    });
 
     beforeEach(() => {
         sandbox = sinon.sandbox.create();
@@ -28,7 +19,7 @@ describe("Auth", () => {
         let fake_user = null;
 
         before(async () => {
-            fake_user = await user_model.create({
+            fake_user = new User({
                 name: "markLin",
                 facebook_id: "-1",
                 facebook: {
@@ -37,6 +28,7 @@ describe("Auth", () => {
                 },
                 email: userEmail,
             });
+            await fake_user.save();
         });
 
         it("should authenticated via correct access_token", async () => {
@@ -69,7 +61,7 @@ describe("Auth", () => {
 
             assert.propertyVal(decoded, "user_id", fake_user._id.toString());
 
-            const user = await user_model.findOneById(fake_user._id);
+            const user = await User.findById(fake_user._id);
             assert.propertyVal(
                 user,
                 "name",
@@ -99,7 +91,7 @@ describe("Auth", () => {
         });
 
         after(async () => {
-            await user_model.collection.deleteMany({});
+            await User.deleteMany({});
         });
     });
 

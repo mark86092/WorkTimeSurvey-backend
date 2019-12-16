@@ -1,5 +1,6 @@
 const { Strategy: JwtStrategy, ExtractJwt } = require("passport-jwt");
 const { ObjectId } = require("mongodb");
+const { User } = require("../models");
 
 const { JWT_SECRET: secret } = process.env;
 
@@ -13,9 +14,7 @@ function jwtStrategy() {
     return new JwtStrategy(opts, (req, jwt_payload, done) => {
         const user_id = ObjectId(jwt_payload.user_id);
 
-        const user_model = req.manager.UserModel;
-
-        user_model.findOneById(user_id).then(
+        User.findById(user_id).then(
             user => {
                 if (user) {
                     done(null, user);

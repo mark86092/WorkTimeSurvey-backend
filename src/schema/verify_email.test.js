@@ -6,6 +6,7 @@ const emailLib = require("../libs/email");
 const { FakeUserFactory } = require("../utils/test_helper");
 const { issueToken } = require("../utils/verify_email_token");
 const { VERIFIED, SENT_VERIFICATION_LINK } = require("../models/user_model");
+const { User } = require("../models");
 
 describe("Verify email", () => {
     const fake_user_factory = new FakeUserFactory();
@@ -69,11 +70,9 @@ describe("Verify email", () => {
         );
 
         // 檢查 DB 內的欄位
-        const user = await fake_user_factory.user_model.findOneById(
-            fake_user._id
-        );
+        const user = await User.findById(fake_user._id);
         assert.propertyVal(user, "email_status", SENT_VERIFICATION_LINK);
-        assert.notProperty(user, "email");
+        assert.notProperty(user.toObject(), "email");
     });
 
     it("Mutation.verifyEmail", async () => {
@@ -104,9 +103,7 @@ describe("Verify email", () => {
             .expect(200);
 
         // 檢查 DB 內的欄位
-        const user = await fake_user_factory.user_model.findOneById(
-            fake_user._id
-        );
+        const user = await User.findById(fake_user._id);
         assert.propertyVal(user, "email_status", VERIFIED);
         assert.propertyVal(user, "email", "ci@goodjob.life");
     });
