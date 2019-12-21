@@ -3,7 +3,6 @@ const express = require("express");
 const router = express.Router();
 const HttpError = require("../../libs/errors").HttpError;
 const winston = require("winston");
-const ExperienceModel = require("../../models/experience_model");
 const UserModel = require("../../models/user_model");
 const helper = require("../company_helper");
 const {
@@ -18,6 +17,7 @@ const wrap = require("../../libs/wrap");
 const {
     requireUserAuthetication,
 } = require("../../middlewares/authentication");
+const { InterviewExperience } = require("../../models/schemas/experienceModel");
 
 function validateCommonInputFields(data) {
     if (!requiredNonEmptyString(data.company_query)) {
@@ -221,7 +221,6 @@ function pickupInterviewExperience(input) {
         experience_in_year,
         education,
         status,
-        email,
         // interview part
         interview_time,
         interview_qas,
@@ -282,10 +281,6 @@ function pickupInterviewExperience(input) {
         partial.status = "published";
     }
 
-    if (email) {
-        partial.email = email;
-    }
-
     return partial;
 }
 
@@ -338,26 +333,15 @@ router.post("/", [
     wrap(async (req, res) => {
         validationInputFields(req.body);
 
-        const experience = {};
-        Object.assign(experience, {
-            type: "interview",
+        const experienceObj = {};
+        Object.assign(experienceObj, {
             author_id: req.user._id,
-            // company 後面決定
-            company: {},
-            like_count: 0,
-            reply_count: 0,
-            report_count: 0,
-            // TODO 瀏覽次數？
-            created_at: new Date(),
-            // 封存狀態
-            archive: {
-                is_archived: false,
-                reason: "",
-            },
         });
-        Object.assign(experience, pickupInterviewExperience(req.body));
+        Object.assign(experienceObj, pickupInterviewExperience(req.body));
 
-        const experience_model = new ExperienceModel(req.db);
+        // TODO: remove false
+        const experience = new InterviewExperience(experienceObj, false);
+
         const company_model = req.manager.CompanyModel;
 
         const company = await helper.getCompanyByIdOrQuery(
@@ -368,15 +352,12 @@ router.post("/", [
         experience.company = company;
 
         // insert data into experiences collection
-        await experience_model.createExperience(experience);
+        await experience.save();
 
         // update user email & subscribeEmail, if email field exists
-        if (experience.email) {
+        if (req.body.email) {
             const user_model = new UserModel(req.manager);
-            await user_model.updateSubscribeEmail(
-                req.user._id,
-                experience.email
-            );
+            await user_model.updateSubscribeEmail(req.user._id, req.body.email);
         }
 
         winston.info("interview experiences insert data success", {
