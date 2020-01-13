@@ -36,6 +36,7 @@ module.exports = [
     // 盡量按造字典排序
     ...require("./company_keyword").types,
     ...require("./company").types,
+    ...require("./dummy").types,
     ...require("./experience").types,
     ...require("./job_title_keyword").types,
     ...require("./job_title").types,

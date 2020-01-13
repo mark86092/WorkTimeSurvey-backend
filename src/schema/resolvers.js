@@ -5,6 +5,7 @@ module.exports = merge([
     // 盡量按造字典排序
     require("./company_keyword").resolvers,
     require("./company").resolvers,
+    require("./dummy").resolvers,
     require("./experience").resolvers,
     require("./job_title_keyword").resolvers,
     require("./job_title").resolvers,

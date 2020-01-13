@@ -22,6 +22,15 @@ input CompanyInput {
   query: String!
 }
 
+input CreateDummyInput {
+  title: String
+  name: String!
+}
+
+type CreateDummyPayload {
+  dummy: Dummy
+}
+
 input CreateInterviewExperienceInput {
   """Common"""
   company: CompanyInput!
@@ -74,6 +83,11 @@ type CreateWorkExperiencePayload {
 }
 
 scalar Date
+
+type Dummy {
+  title: String
+  name: String!
+}
 
 enum EmailStatus {
   UNVERIFIED
@@ -257,6 +271,7 @@ type LaborRight {
 
 type Mutation {
   placeholder: Boolean
+  createDummy(input: CreateDummyInput!): CreateDummyPayload!
   createInterviewExperience(input: CreateInterviewExperienceInput!): CreateInterviewExperiencePayload!
   createWorkExperience(input: CreateWorkExperienceInput!): CreateWorkExperiencePayload!
 
@@ -307,6 +322,7 @@ type Query {
 
   """目前用途：取得薪資資料前 topN 多的公司，且至少有三種職稱各至少有三筆資料"""
   popular_companies(limit: Int = 5): [Company!]!
+  dummies: [Dummy!]!
 
   """取得單篇經驗分享"""
   experience(id: ID!): Experience
