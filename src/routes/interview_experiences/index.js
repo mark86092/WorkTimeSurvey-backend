@@ -1,10 +1,9 @@
 const express = require("express");
+const { makeExecutableSchema } = require("graphql-tools");
+const { graphql } = require("graphql");
 
 const router = express.Router();
-const HttpError = require("../../libs/errors").HttpError;
-const winston = require("winston");
-const ExperienceModel = require("../../models/experience_model");
-const UserModel = require("../../models/user_model");
+const { HttpError } = require("../../libs/errors");
 const helper = require("../company_helper");
 const {
     requiredNonEmptyString,
@@ -18,6 +17,14 @@ const wrap = require("../../libs/wrap");
 const {
     requireUserAuthetication,
 } = require("../../middlewares/authentication");
+
+const resolvers = require("../../schema/resolvers");
+const typeDefs = require("../../schema/typeDefs");
+
+const schema = makeExecutableSchema({
+    typeDefs,
+    resolvers,
+});
 
 function validateCommonInputFields(data) {
     if (!requiredNonEmptyString(data.company_query)) {
@@ -113,9 +120,19 @@ function validateCommonInputFields(data) {
         }
     }
 
-    if (data.email) {
-        if (!validateEmail(data.email)) {
-            throw new HttpError("E-mail 格式錯誤", 422);
+    if (data.email && !validateEmail(data.email)) {
+        throw new HttpError("E-mail 格式錯誤", 422);
+    }
+
+    if (data.salary) {
+        if (!shouldIn(data.salary.type, ["year", "month", "day", "hour"])) {
+            throw new HttpError("薪資種類需為年薪/月薪/日薪/時薪", 422);
+        }
+        if (!requiredNumber(data.salary.amount)) {
+            throw new HttpError("薪資需為數字", 422);
+        }
+        if (data.salary.amount < 0) {
+            throw new HttpError("薪資不小於0", 422);
         }
     }
 }
@@ -189,24 +206,17 @@ function validateInterviewInputFields(data) {
         });
     }
 
-    if (data.salary) {
-        if (!shouldIn(data.salary.type, ["year", "month", "day", "hour"])) {
-            throw new HttpError("薪資種類需為年薪/月薪/日薪/時薪", 422);
-        }
-        if (!requiredNumber(data.salary.amount)) {
-            throw new HttpError("薪資需為數字", 422);
-        }
-        if (data.salary.amount < 0) {
-            throw new HttpError("薪資不小於0", 422);
-        }
-    }
-
     if (!requiredNumber(data.overall_rating)) {
         throw new HttpError("這次面試你給幾分？", 422);
     }
     if (!shouldIn(data.overall_rating, [1, 2, 3, 4, 5])) {
         throw new HttpError("面試分數有誤", 422);
     }
+}
+
+function validationInputFields(data) {
+    validateCommonInputFields(data);
+    validateInterviewInputFields(data);
 }
 
 function pickupInterviewExperience(input) {
@@ -222,12 +232,12 @@ function pickupInterviewExperience(input) {
         education,
         status,
         email,
+        salary,
         // interview part
         interview_time,
         interview_qas,
         interview_result,
         interview_sensitive_questions,
-        salary,
         overall_rating,
     } = input;
 
@@ -289,11 +299,6 @@ function pickupInterviewExperience(input) {
     return partial;
 }
 
-function validationInputFields(data) {
-    validateCommonInputFields(data);
-    validateInterviewInputFields(data);
-}
-
 /**
  * @api {post} /interview_experiences 上傳面試經驗 API
  * @apiGroup Interview_Experiences
@@ -306,6 +311,7 @@ function validationInputFields(data) {
     "臺中市","臺南市","臺北市","臺東縣","桃園市",
     "宜蘭縣","雲林縣" } region 面試地區
  * @apiParam {String} job_title 應徵職稱
+ * @apiParam {String="0 < length <= 50 "} title 整篇經驗分享的標題
  * @apiParam {Number="整數, 0 <= N <= 50"} [experience_in_year] 相關職務工作經驗
  * @apiParam {String="大學","碩士","博士","高職","五專","二專","二技","高中","國中","國小"} [education] 最高學歷
  * @apiParam {Object} interview_time 面試時間
@@ -316,7 +322,6 @@ function validationInputFields(data) {
  * @apiParam {String="year","month","day","hour"} salary.type 面談薪資種類 (若有上傳面談薪資欄位，本欄必填)
  * @apiParam {Number="整數, >= 0"} salary.amount 面談薪資金額 (若有上傳面談薪資欄位，本欄必填)
  * @apiParam {Number="整數, 1~5"} overall_rating 整體面試滿意度
- * @apiParam {String="0 < length <= 50 "} title 整篇經驗分享的標題
  * @apiParam {Object[]} sections 整篇內容
  * @apiParam {String="0 < length <= 25" || NULL} sections.subtitle 段落標題
  * @apiParam {String="0 < length <= 5000"} sections.content 段落內容
@@ -338,26 +343,11 @@ router.post("/", [
     wrap(async (req, res) => {
         validationInputFields(req.body);
 
-        const experience = {};
-        Object.assign(experience, {
-            type: "interview",
-            author_id: req.user._id,
-            // company 後面決定
+        const experience = {
             company: {},
-            like_count: 0,
-            reply_count: 0,
-            report_count: 0,
-            // TODO 瀏覽次數？
-            created_at: new Date(),
-            // 封存狀態
-            archive: {
-                is_archived: false,
-                reason: "",
-            },
-        });
+        };
         Object.assign(experience, pickupInterviewExperience(req.body));
 
-        const experience_model = new ExperienceModel(req.db);
         const company_model = req.manager.CompanyModel;
 
         const company = await helper.getCompanyByIdOrQuery(
@@ -367,28 +357,31 @@ router.post("/", [
         );
         experience.company = company;
 
-        // insert data into experiences collection
-        await experience_model.createExperience(experience);
+        const query = /* GraphQL */ `
+            mutation CreateInterviewExperience(
+                $input: CreateInterviewExperienceInput!
+            ) {
+                createInterviewExperience(input: $input) {
+                    success
+                    experience {
+                        id
+                    }
+                }
+            }
+        `;
 
-        // update user email & subscribeEmail, if email field exists
-        if (experience.email) {
-            const user_model = new UserModel(req.manager);
-            await user_model.updateSubscribeEmail(
-                req.user._id,
-                experience.email
-            );
-        }
+        const input = {
+            input: experience,
+        };
 
-        winston.info("interview experiences insert data success", {
-            id: experience._id,
-            ip: req.ip,
-            ips: req.ips,
-        });
+        const {
+            data: { createInterviewExperience },
+        } = await graphql(schema, query, null, req, input);
 
         res.send({
-            success: true,
+            success: createInterviewExperience.success,
             experience: {
-                _id: experience._id,
+                _id: createInterviewExperience.experience.id,
             },
         });
     }),
