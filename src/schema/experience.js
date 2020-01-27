@@ -585,9 +585,9 @@ const resolvers = {
 
     Mutation: {
         async createInterviewExperience(root, { input }, { user, manager }) {
-            const experience = input;
+            const experienceObj = input;
 
-            validationInterviewInputFields(experience);
+            validationInterviewInputFields(experienceObj);
 
             const company_model = manager.CompanyModel;
 
@@ -596,35 +596,36 @@ const resolvers = {
                 input.company.id,
                 input.company.query
             );
-            experience.company = company;
-            experience.job_title = experience.job_title.toUpperCase();
-            experience.interview_qas = experience.interview_qas.map(qas => {
-                const result = {
-                    question: qas.question,
-                };
-                if (typeof qas.answer === "undefined" || qas.answer == null) {
+            experienceObj.company = company;
+            experienceObj.job_title = experienceObj.job_title.toUpperCase();
+            experienceObj.interview_qas = experienceObj.interview_qas.map(
+                qas => {
+                    const result = {
+                        question: qas.question,
+                    };
+                    if (
+                        typeof qas.answer === "undefined" ||
+                        qas.answer == null
+                    ) {
+                        return result;
+                    }
+                    result.answer = qas.answer;
                     return result;
                 }
-                result.answer = qas.answer;
-                return result;
-            });
+            );
 
-            Object.assign(experience, {
-                type: "interview",
-                author_id: user._id,
-                status: "published",
-            });
-
-            const nonNilExperience = omitBy(experience, isNil);
+            const nonNilExperience = omitBy(experienceObj, isNil);
 
             // TODO: remove false
-            const experienceDoc = new InterviewExperience(experience, false);
+            const experience = new InterviewExperience(nonNilExperience, false);
+
+            experience.author_id = user._id;
 
             // insert data into experiences collection
-            await experienceDoc.save();
+            await experience.save();
 
             // update user email & subscribeEmail, if email field exists
-            if (experience.email) {
+            if (input.email) {
                 const user_model = new UserModel(manager);
                 await user_model.updateSubscribeEmail(
                     user._id,

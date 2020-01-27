@@ -68,6 +68,7 @@ const experienceSchema = new Schema(
         status: {
             type: String,
             required: true,
+            default: "published",
         },
         // 封存狀態
         archive: {
