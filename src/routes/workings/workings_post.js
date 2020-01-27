@@ -1,4 +1,5 @@
 const winston = require("winston");
+const Joi = require("@hapi/joi");
 const UserModel = require("../../models/user_model");
 const helper = require("./helper");
 const companyHelper = require("../company_helper");
@@ -17,6 +18,55 @@ function checkBodyField(req, field) {
     return false;
 }
 
+const inputSchema = Joi.object({
+    job_title: Joi.string()
+        .min(1)
+        .max(100)
+        .required(),
+    sector: Joi.string().optional(),
+    gender: Joi.string()
+        .valid("male", "female", "other")
+        .optional(),
+    employment_type: Joi.string()
+        .valid(
+            "full-time",
+            "part-time",
+            "intern",
+            "temporary",
+            "contract",
+            "dispatched-labor"
+        )
+        .required(),
+    is_currently_employed: Joi.string()
+        .valid("yes", "no")
+        .required(),
+    job_ending_time_year: Joi.when("is_currently_employed", {
+        is: Joi.valid("no"),
+        then: Joi.number()
+            .integer()
+            .required(),
+        else: Joi.forbidden(),
+    }),
+    job_ending_time_month: Joi.when("is_currently_employed", {
+        is: Joi.valid("no"),
+        then: Joi.number()
+            .integer()
+            .min(1)
+            .max(12)
+            .required(),
+        else: Joi.forbidden(),
+    }),
+}).unknown(true);
+
+function inputCheck(req, res, next) {
+    try {
+        Joi.assert(req.body, inputSchema);
+        next();
+    } catch (e) {
+        next(new HttpError(e.message, 422));
+    }
+}
+
 /*
  * req.user.facebook
  *
@@ -27,20 +77,25 @@ function collectData(req, res, next) {
     req.custom.working = {
         user_id: req.user._id,
         company: {},
+        status: "published",
         created_at: new Date(),
     };
     const working = req.custom.working;
 
+    // common data
+    working.job_title = req.body.job_title.toUpperCase();
+    if (req.body.sector) {
+        working.sector = req.body.sector;
+    }
+    if (req.body.gender) {
+        working.gender = req.body.gender;
+    }
+    working.employment_type = req.body.employment_type;
+    working.is_currently_employed = req.body.is_currently_employed;
+
     // pick these fields only
     // make sure the field is string
     [
-        // common data
-        "job_title",
-        "sector",
-        "gender",
-        "is_currently_employed",
-        "employment_type",
-        "status",
         // workingtime data
         "week_work_time",
         "overtime_frequency",
@@ -104,9 +159,6 @@ function collectData(req, res, next) {
  * - is_currently_employed == "yes": job_ending_time_month undefined
  * - is_currently_employed == "no": job_ending_time_year
  * - is_currently_employed == "no": job_ending_time_month
- * - job_title
- * - employment_type: xxx
- * - [gender]: "male", "female", "other"
  */
 function validateCommonData(req) {
     const data = req.custom.working;
@@ -117,13 +169,6 @@ function validateCommonData(req) {
         if (!company_query) {
             throw new HttpError("公司/單位名稱必填", 422);
         }
-    }
-
-    if (!data.is_currently_employed) {
-        throw new HttpError("是否在職必填", 422);
-    }
-    if (["yes", "no"].indexOf(data.is_currently_employed) === -1) {
-        throw new HttpError("是否在職應為是/否", 422);
     }
     if (data.is_currently_employed === "yes") {
         if (custom.job_ending_time_year || custom.job_ending_time_month) {
@@ -162,34 +207,6 @@ function validateCommonData(req) {
             custom.job_ending_time_year > now.getFullYear()
         ) {
             throw new HttpError("離職月份不能比現在時間晚", 422);
-        }
-    }
-
-    if (!data.job_title) {
-        throw new HttpError("職稱未填", 422);
-    }
-
-    if (!data.employment_type) {
-        throw new HttpError("職務型態必填", 422);
-    }
-    const employment_types = [
-        "full-time",
-        "part-time",
-        "intern",
-        "temporary",
-        "contract",
-        "dispatched-labor",
-    ];
-    if (employment_types.indexOf(data.employment_type) === -1) {
-        throw new HttpError(
-            "職務型態需為全職/兼職/實習/臨時工/約聘雇/派遣",
-            422
-        );
-    }
-
-    if (data.gender) {
-        if (["male", "female", "other"].indexOf(data.gender) === -1) {
-            throw new HttpError("若性別有填寫，需為男/女/其他", 422);
         }
     }
 
@@ -402,7 +419,6 @@ async function normalizeData(req, res, next) {
     /*
      * Normalize the data
      */
-    working.job_title = working.job_title.toUpperCase();
     if (req.custom.job_ending_time_year && req.custom.job_ending_time_month) {
         working.job_ending_time = {
             year: req.custom.job_ending_time_year,
@@ -440,10 +456,6 @@ async function normalizeData(req, res, next) {
             year: date.getFullYear(),
             month: date.getMonth() + 1,
         };
-    }
-
-    if (!working.status) {
-        working.status = "published";
     }
 
     const company_query = req.custom.company_query;
@@ -539,6 +551,7 @@ async function main(req, res) {
 }
 
 module.exports = {
+    inputCheck,
     collectData,
     validation,
     normalizeData,

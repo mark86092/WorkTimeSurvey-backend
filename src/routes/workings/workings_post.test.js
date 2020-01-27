@@ -110,7 +110,7 @@ function generateAllPayload(options) {
     return payload;
 }
 
-describe("POST /workings", () => {
+describe.only("POST /workings", () => {
     let db;
     const fake_user_factory = new FakeUserFactory();
     const fake_user = {
@@ -426,8 +426,8 @@ describe("POST /workings", () => {
                     }));
         }
 
-        for (const input of [""]) {
-            it(`gender should not return if "${input}"`, () =>
+        for (const input of ["", "invalid"]) {
+            it("gender fail if invalid input", () =>
                 request(app)
                     .post("/workings")
                     .send(
@@ -436,22 +436,8 @@ describe("POST /workings", () => {
                         })
                     )
                     .set("Authorization", `Bearer ${fake_user_token}`)
-                    .expect(200)
-                    .expect(res => {
-                        assert.notProperty(res.body.working, "gender");
-                    }));
+                    .expect(422));
         }
-
-        it("gender fail if invalid input", () =>
-            request(app)
-                .post("/workings")
-                .send(
-                    generateWorkingTimeRelatedPayload({
-                        gender: "invalid",
-                    })
-                )
-                .set("Authorization", `Bearer ${fake_user_token}`)
-                .expect(422));
 
         for (const input of [
             "full-time",

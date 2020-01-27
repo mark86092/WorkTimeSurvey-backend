@@ -206,6 +206,7 @@ router.post("/", requireUserAuthetication);
 
 router.post(
     "/",
+    post_helper.inputCheck,
     post_helper.collectData,
     post_helper.validation,
     wrap(post_helper.normalizeData),
