@@ -1,19 +1,18 @@
 const Joi = require("@hapi/joi");
 const EmailTemplate = require("./template");
 const { EmailTemplateVariablesError } = require("../errors");
-const { account_verify } = require("email-template");
+const { survey } = require("email-template");
 
 const schema = Joi.object().keys({
-    username: Joi.string()
+    userName: Joi.string()
         .min(1)
-        .max(30)
         .required(),
-    verifyUrl: Joi.string()
+    surveryUrl: Joi.string()
         .uri()
         .required(),
 });
 
-class AccountVerifyTemplate extends EmailTemplate {
+class SurveyTemplate extends EmailTemplate {
     validateVariables(variables) {
         const result = schema.validate(variables);
         if (!result.error) {
@@ -23,13 +22,16 @@ class AccountVerifyTemplate extends EmailTemplate {
         }
     }
 
-    genBodyHTML({ username, verifyUrl }) {
-        return account_verify.genBodyHTML({ username, verifyUrl });
+    genBodyHTML({ userName, surveryUrl }) {
+        return survey.genBodyHTML({
+            userName,
+            surveryUrl,
+        });
     }
 
-    genSubject() {
-        return account_verify.genSubject();
+    genSubject({ userName }) {
+        return survey.genSubject({ userName });
     }
 }
 
-module.exports = AccountVerifyTemplate;
+module.exports = SurveyTemplate;

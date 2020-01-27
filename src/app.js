@@ -3,13 +3,13 @@ const compression = require("compression");
 const cors = require("cors");
 const express = require("express");
 const mongoose = require("mongoose");
+const Joi = require("@hapi/joi");
 const { HttpError, ObjectNotExistError } = require("./libs/errors");
 const expressMongoDb = require("./middlewares/express_mongo_db");
 const expressRedisDb = require("./middlewares/express_redis_db");
 const logger = require("morgan");
 const winston = require("winston");
 const passport = require("passport");
-const passportStrategies = require("./libs/passport-strategies");
 const { jwtStrategy } = require("./utils/passport-strategies");
 
 const ModelManager = require("./models/manager");
@@ -74,7 +74,6 @@ app.use((req, res, next) => {
 });
 
 app.use(passport.initialize());
-passport.use(passportStrategies.legacyFacebookTokenStrategy());
 passport.use(jwtStrategy());
 app.use((req, res, next) => {
     passport.authenticate("jwt", { session: false }, (err, user) => {
@@ -98,6 +97,12 @@ setupGraphql(app, {
             message: err.message,
             error: err,
         });
+
+        // If Joi.ValidationError, overwrite code to be the same as UserInputError
+        if (err.originalError instanceof Joi.ValidationError) {
+            err.extensions.code = "BAD_USER_INPUT";
+        }
+
         return err;
     },
 });

@@ -1,4 +1,5 @@
 const { Schema } = require("mongoose");
+const UserModel = require("../user_model");
 
 const userSchema = new Schema({
     name: {
@@ -8,21 +9,19 @@ const userSchema = new Schema({
     },
     email: {
         type: String,
-        required: true,
     },
     email_status: {
         type: String,
+        default: UserModel.UNVERIFIED,
     },
     facebook_id: {
         type: String,
-        index: true,
         required: function() {
             return !this.google_id;
         },
     },
     google_id: {
         type: String,
-        index: true,
         required: function() {
             return !this.facebook_id;
         },
@@ -34,6 +33,22 @@ const userSchema = new Schema({
         type: Schema.Types.Mixed,
     },
 });
+
+userSchema.index(
+    { facebook_id: 1 },
+    {
+        unique: true,
+        partialFilterExpression: { facebook_id: { $type: "string" } },
+    }
+);
+
+userSchema.index(
+    { google_id: 1 },
+    {
+        unique: true,
+        partialFilterExpression: { google_id: { $type: "string" } },
+    }
+);
 
 userSchema.statics.findOneByFacebookId = function(facebook_id) {
     return this.findOne({ facebook_id });
