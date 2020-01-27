@@ -45,7 +45,7 @@ const inputSchema = Joi.object({
         then: Joi.number()
             .integer()
             .required(),
-        else: Joi.forbidden(),
+        otherwise: Joi.forbidden(),
     }),
     job_ending_time_month: Joi.when("is_currently_employed", {
         is: Joi.valid("no"),
@@ -54,7 +54,7 @@ const inputSchema = Joi.object({
             .min(1)
             .max(12)
             .required(),
-        else: Joi.forbidden(),
+        otherwise: Joi.forbidden(),
     }),
 }).unknown(true);
 
