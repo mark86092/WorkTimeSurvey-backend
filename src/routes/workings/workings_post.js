@@ -466,7 +466,6 @@ async function normalizeData(req, res, next) {
 async function main(req, res) {
     const { working } = req.custom;
     const response_data = { working };
-    const collection = req.db.collection("workings");
 
     try {
         let rec_user = null;
@@ -508,7 +507,7 @@ async function main(req, res) {
         const queries_count = await helper.checkAndUpdateQuota(req.db, user_id);
         response_data.queries_count = queries_count;
 
-        await collection.insert(working);
+        await req.manager.SalaryWorkTimeModel.createSalaryWorkTime(working);
 
         // update user email & subscribeEmail, if email field exists
         if (working.email) {
