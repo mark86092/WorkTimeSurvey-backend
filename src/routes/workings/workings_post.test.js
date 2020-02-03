@@ -18,7 +18,6 @@ function generateWorkingTimeRelatedPayload(options) {
         overtime_frequency: "3",
         day_promised_work_time: "8",
         day_real_work_time: "10",
-        status: "published",
     };
 
     const payload = {};
@@ -50,7 +49,6 @@ function generateSalaryRelatedPayload(options) {
         salary_type: "year",
         salary_amount: "10000",
         experience_in_year: "10",
-        status: "published",
     };
 
     const payload = {};
@@ -88,7 +86,6 @@ function generateAllPayload(options) {
         overtime_frequency: "3",
         day_promised_work_time: "8",
         day_real_work_time: "10",
-        status: "published",
     };
 
     const payload = {};
@@ -1336,17 +1333,6 @@ describe.only("POST /workings", () => {
                 .collection("workings")
                 .findOne({ _id: ObjectId(data_id) });
             assert.notDeepProperty(result, "recommended_by");
-        });
-    });
-
-    describe("status part", () => {
-        it("status can be `hidden`", async () => {
-            const res = await request(app)
-                .post("/workings")
-                .send(generateWorkingTimeRelatedPayload({ status: "hidden" }))
-                .set("Authorization", `Bearer ${fake_user_token}`)
-                .expect(200);
-            assert.equal(res.body.working.status, "hidden");
         });
     });
 
