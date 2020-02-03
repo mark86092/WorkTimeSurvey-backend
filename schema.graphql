@@ -135,10 +135,18 @@ enum ExperienceType {
   intern
 }
 
+input FacebookLoginInput {
+  accessToken: String!
+}
+
 enum Gender {
   female
   male
   other
+}
+
+input GoogleLoginInput {
+  idToken: String!
 }
 
 type InternExperience implements Experience {
@@ -269,11 +277,22 @@ type LaborRight {
   descriptionInPermissionBlock: String
 }
 
+type LoginPayload {
+  user: User!
+  token: String!
+}
+
 type Mutation {
   placeholder: Boolean
   createInterviewExperience(input: CreateInterviewExperienceInput!): CreateInterviewExperiencePayload!
   createWorkExperience(input: CreateWorkExperienceInput!): CreateWorkExperiencePayload!
   changeSalaryWorkTimeStatus(input: ChangeSalaryWorkTimeStatusInput!): ChangeSalaryWorkTimeStatusPayload!
+
+  """Login via facebook client side auth"""
+  facebookLogin(input: FacebookLoginInput!): LoginPayload!
+
+  """Login via google client side auth"""
+  googleLogin(input: GoogleLoginInput!): LoginPayload!
 
   """發送驗證信"""
   sendVerifyEmail(input: SendVerifyEmailInput!): SendVerifyEmailPayload!
@@ -484,6 +503,7 @@ type User {
   _id: ID!
   name: String!
   facebook_id: String
+  google_id: String
   email: String
   email_status: EmailStatus
   created_at: Date!
