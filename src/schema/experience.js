@@ -13,7 +13,6 @@ const {
     requiredNumberInRange,
 } = require("../libs/validation");
 const ExperienceModel = require("../models/experience_model");
-const UserModel = require("../models/user_model");
 const helper = require("../routes/company_helper");
 
 const WorkExperienceType = "work";
@@ -641,11 +640,7 @@ const resolvers = {
 
                 // update user email & subscribeEmail, if email field exists
                 if (experience.email) {
-                    const user_model = new UserModel(manager);
-                    await user_model.updateSubscribeEmail(
-                        user._id,
-                        experience.email
-                    );
+                    await user.updateSubscribeEmail(experience.email);
                 }
 
                 return {
@@ -705,11 +700,7 @@ const resolvers = {
 
                 await experience_model.createExperience(nonNilExperience);
                 if (experience.email) {
-                    const user_model = new UserModel(manager);
-                    await user_model.updateSubscribeEmail(
-                        user._id,
-                        experience.email
-                    );
+                    await user.updateSubscribeEmail(experience.email);
                 }
 
                 return {

@@ -1,6 +1,6 @@
 const { assert } = require("chai");
 const { connectMongo } = require("../../models/connect");
-const { UNVERIFIED } = require("../../models/user_model");
+const { UNVERIFIED } = require("../../models/email_status");
 const migration = require("./migration-2019-05-01-add-email-status-to-users");
 
 describe("Migrate add email_status to users", function() {

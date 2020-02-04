@@ -1,4 +1,4 @@
-const { UNVERIFIED } = require("../../models/user_model");
+const { UNVERIFIED } = require("../../models/email_status");
 
 module.exports = async db => {
     const result = await db

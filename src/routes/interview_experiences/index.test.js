@@ -8,6 +8,7 @@ const app = require("../../app");
 const { connectMongo } = require("../../models/connect");
 const ObjectId = require("mongodb").ObjectId;
 const { FakeUserFactory } = require("../../utils/test_helper");
+const { User } = require("../../models");
 
 function generateInterviewExperiencePayload(options) {
     const opt = options || {};
@@ -173,10 +174,7 @@ describe("experiences 面試和工作經驗資訊", () => {
                 .set("Authorization", `Bearer ${fake_user_token}`)
                 .expect(200);
 
-            const user = await db
-                .collection("users")
-                .findOne({ _id: fake_user._id });
-
+            const user = await User.findById(fake_user._id);
             assert.equal(user.subscribeEmail, true);
             assert.equal(user.email, email);
         });

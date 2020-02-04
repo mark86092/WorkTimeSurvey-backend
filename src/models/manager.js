@@ -3,7 +3,6 @@ const CompanyModel = require("./company_model");
 const ExperienceLikeModel = require("./experience_like_model_v2");
 const JobTitleKeywordModel = require("./job_title_keyword_model");
 const SalaryWorkTimeModel = require("./salary_work_time_model");
-const UserModel = require("./user_model");
 const ViewLogModel = require("./view_log_model");
 const ExperienceModel = require("./experience_model_v2");
 
@@ -33,10 +32,6 @@ class ModelManager {
             this._salary_work_time_model = new SalaryWorkTimeModel(this);
         }
         return this._salary_work_time_model;
-    }
-
-    get UserModel() {
-        return new UserModel(this);
     }
 
     get ViewLogModel() {

@@ -1,24 +1,17 @@
-const { connectMongo } = require("../models/connect");
-const ModelManager = require("../models/manager");
+const { User } = require("../models");
 const jwt = require("../utils/jwt");
 
 class FakeUserFactory {
-    async setUp() {
-        const { client, db } = await connectMongo();
-        const manager = new ModelManager(db);
-        this.client = client;
-        this.user_model = manager.UserModel;
-    }
+    async setUp() {}
 
     async create(user) {
-        await this.user_model.collection.insertOne(user);
-        const token = await jwt.sign({ user_id: user._id });
+        await User.collection.insertOne(user);
+        const token = await jwt.signUser(user);
         return token;
     }
 
     async tearDown() {
-        await this.user_model.collection.deleteMany({});
-        await this.client.close();
+        await User.deleteMany({});
     }
 }
 

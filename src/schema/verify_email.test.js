@@ -5,7 +5,7 @@ const app = require("../app");
 const emailLib = require("../libs/email");
 const { FakeUserFactory } = require("../utils/test_helper");
 const { issueToken } = require("../utils/verify_email_token");
-const { VERIFIED, SENT_VERIFICATION_LINK } = require("../models/user_model");
+const { VERIFIED, SENT_VERIFICATION_LINK } = require("../models/email_status");
 const { User } = require("../models");
 
 describe("Verify email", () => {

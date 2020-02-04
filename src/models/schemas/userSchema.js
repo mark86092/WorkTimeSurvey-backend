@@ -33,6 +33,14 @@ const userSchema = new Schema({
     google: {
         type: Schema.Types.Mixed,
     },
+    time_and_salary_count: {
+        type: Number,
+        default: 0,
+    },
+    subscribeEmail: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 userSchema.index(
@@ -57,6 +65,15 @@ userSchema.statics.findOneByFacebookId = function(facebook_id) {
 
 userSchema.statics.findOneByGoogleId = function(google_id) {
     return this.findOne({ google_id });
+};
+
+userSchema.methods.updateSubscribeEmail = async function(email) {
+    return await this.updateOne({
+        $set: {
+            email,
+            subscribeEmail: true,
+        },
+    });
 };
 
 module.exports = userSchema;

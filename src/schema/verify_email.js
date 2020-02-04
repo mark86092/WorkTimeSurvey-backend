@@ -7,7 +7,7 @@ const { issueToken, verifyToken } = require("../utils/verify_email_token");
 const { signUser } = require("../utils/jwt");
 const emailLib = require("../libs/email");
 const { AccountVerifyTemplate } = require("../libs/email_templates");
-const { VERIFIED, SENT_VERIFICATION_LINK } = require("../models/user_model");
+const { VERIFIED, SENT_VERIFICATION_LINK } = require("../models/email_status");
 const { User } = require("../models");
 
 const FRONTEND_URL = process.env.FRONTEND_URL;

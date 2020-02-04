@@ -1,5 +1,4 @@
 const winston = require("winston");
-const UserModel = require("../../models/user_model");
 const helper = require("./helper");
 const companyHelper = require("../company_helper");
 const recommendation = require("../../libs/recommendation");
@@ -503,12 +502,11 @@ async function main(req, res) {
         };
 
         await req.manager.SalaryWorkTimeModel.createSalaryWorkTime(working);
-        await req.manager.UserModel.increaseSalaryWorkTimeCount(req.user._id);
+        await req.user.updateOne({ $inc: { time_and_salary_count: 1 } });
 
         // update user email & subscribeEmail, if email field exists
         if (working.email) {
-            const user_model = new UserModel(req.manager);
-            await user_model.updateSubscribeEmail(req.user._id, working.email);
+            await req.user.updateSubscribeEmail(working.email);
         }
 
         winston.info("workings insert data success", {

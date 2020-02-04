@@ -6,6 +6,7 @@ const app = require("../../app");
 const { connectMongo } = require("../../models/connect");
 const ObjectId = require("mongodb").ObjectId;
 const { FakeUserFactory } = require("../../utils/test_helper");
+const { User } = require("../../models");
 
 function generateWorkingTimeRelatedPayload(options) {
     const opt = options || {};
@@ -212,10 +213,7 @@ describe("POST /workings", () => {
                 })
                 .set("Authorization", `Bearer ${fake_user_token}`)
                 .expect(200);
-            const user = await db
-                .collection("users")
-                .findOne({ _id: fake_user._id });
-
+            const user = await User.findById(fake_user._id);
             assert.equal(user.subscribeEmail, true);
             assert.equal(user.email, email);
         });
@@ -1371,9 +1369,7 @@ describe("POST /workings", () => {
                 .send(generateWorkingTimeRelatedPayload())
                 .set("Authorization", `Bearer ${fake_user_token}`)
                 .expect(200);
-            const user = await db
-                .collection("users")
-                .findOne({ _id: fake_user._id });
+            const user = await User.findById(fake_user._id);
             assert.propertyVal(user, "time_and_salary_count", 1);
         });
     });
