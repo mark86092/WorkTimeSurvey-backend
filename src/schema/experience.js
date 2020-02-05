@@ -620,7 +620,6 @@ const resolvers = {
                 );
 
                 const nonNilExperience = omitBy(experienceObj, isNil);
-
                 // TODO: remove false
                 const experience = new InterviewExperience(
                     nonNilExperience,
@@ -637,9 +636,14 @@ const resolvers = {
                     const user_model = new UserModel(manager);
                     await user_model.updateSubscribeEmail(
                         user._id,
-                        experience.email
+                        input.email
                     );
                 }
+
+                return {
+                    success: true,
+                    experience,
+                };
             }
         ),
         createWorkExperience: combineResolvers(
