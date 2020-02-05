@@ -8,6 +8,7 @@ const { signUser } = require("../utils/jwt");
 const emailLib = require("../libs/email");
 const { AccountVerifyTemplate } = require("../libs/email_templates");
 const { VERIFIED, SENT_VERIFICATION_LINK } = require("../models/user_model");
+const { User } = require("../models");
 
 const FRONTEND_URL = process.env.FRONTEND_URL;
 
@@ -58,7 +59,7 @@ const resolvers = {
     Mutation: {
         sendVerifyEmail: combineResolvers(
             isAuthenticated,
-            async (root, { input }, { user, manager }) => {
+            async (root, { input }, { user }) => {
                 /**
                  * 1. Issue 驗證用 token
                  * 2. 建立範本並寄送 email
@@ -94,8 +95,7 @@ const resolvers = {
                 );
 
                 // 修改 user 的 email_status
-                const UserModel = manager.UserModel;
-                await UserModel.collection.updateOne(
+                await User.updateOne(
                     { _id: user._id },
                     {
                         $set: {
@@ -107,7 +107,7 @@ const resolvers = {
                 return { status: "ok" };
             }
         ),
-        async verifyEmail(root, { input }, { manager }) {
+        async verifyEmail(root, { input }) {
             /**
              * 1. 檢查 token 是否有效、是否過期
              * 2. 標記成 VERIFIED，並更新 email 欄位
@@ -118,8 +118,7 @@ const resolvers = {
             const { user_id, email, redirect_url } = payload;
 
             // 修改 user 的 email_status & email
-            const UserModel = manager.UserModel;
-            await UserModel.collection.updateOne(
+            await User.updateOne(
                 { _id: user_id },
                 {
                     $set: {
@@ -130,7 +129,7 @@ const resolvers = {
             );
 
             // 簽發登入用 token
-            const user = await UserModel.findOneById(user_id);
+            const user = await User.findById(user_id);
             const access_token = await signUser(user);
 
             return {

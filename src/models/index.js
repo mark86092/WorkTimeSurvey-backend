@@ -1,7 +1,8 @@
 const { ObjectId } = require("mongodb");
 const { ObjectNotExistError } = require("../libs/errors");
+const User = require("./schemas/userModel");
 
-module.exports.ensureToObjectId = function(id_string) {
+const ensureToObjectId = function(id_string) {
     if (id_string instanceof ObjectId) {
         return id_string;
     }
@@ -15,4 +16,9 @@ module.exports.ensureToObjectId = function(id_string) {
     }
 
     return new ObjectId(id_string);
+};
+
+module.exports = {
+    ensureToObjectId,
+    User,
 };

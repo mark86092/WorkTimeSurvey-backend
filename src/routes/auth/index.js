@@ -6,6 +6,7 @@ const facebook = require("../../libs/facebook");
 const google = require("../../libs/google");
 const { requiredNonEmptyString } = require("../../libs/validation");
 const { HttpError } = require("../../libs/errors");
+const { User } = require("../../models");
 
 /* eslint-disable */
 /**
@@ -27,8 +28,6 @@ router.post(
         }
         const access_token = req.body.access_token;
 
-        const user_model = req.manager.UserModel;
-
         // Check access_token with FB server
         let account = null;
         try {
@@ -40,28 +39,25 @@ router.post(
         // Retrieve User from DB
         const facebook_id = account.id;
         const name = account.name;
-        let user = await user_model.findOneByFacebookId(facebook_id);
+        let user = await User.findOneByFacebookId(facebook_id);
         if (!user) {
-            user = await user_model.create({
+            user = new User({
                 name,
                 facebook_id,
                 facebook: account,
                 email: account.email,
             });
+            await user.save();
         }
 
         if (!user.name && account.name) {
-            await user_model.collection.updateOne(
-                { _id: user._id },
-                { $set: { name: account.name } }
-            );
+            user.name = account.name;
+            await user.save();
         }
 
         if (!user.email && account.email) {
-            await user_model.collection.updateOne(
-                { _id: user._id },
-                { $set: { email: account.email } }
-            );
+            user.name = account.email;
+            await user.save();
         }
 
         // Sign token
@@ -72,7 +68,7 @@ router.post(
             user: {
                 _id: user._id,
                 facebook_id: user.facebook_id,
-                email: user.email || account.email,
+                email: user.email,
             },
             token,
         });
@@ -89,8 +85,6 @@ router.post(
         }
         const idToken = req.body.id_token;
 
-        const user_model = req.manager.UserModel;
-
         // Check access_token with google server
         let account = null;
         try {
@@ -102,28 +96,25 @@ router.post(
         // Retrieve User from DB
         const google_id = account.sub;
 
-        let user = await user_model.findOneByGoogleId(google_id);
+        let user = await User.findOneByGoogleId(google_id);
         if (!user) {
-            user = await user_model.create({
+            user = new User({
                 name: account.name,
                 google_id,
                 google: account,
                 email: account.email,
             });
+            await user.save();
         }
 
         if (!user.name && account.name) {
-            await user_model.collection.updateOne(
-                { _id: user._id },
-                { $set: { name: account.name } }
-            );
+            user.name = account.name;
+            await user.save();
         }
 
         if (!user.email && account.email) {
-            await user_model.collection.updateOne(
-                { _id: user._id },
-                { $set: { email: account.email } }
-            );
+            user.name = account.email;
+            await user.save();
         }
 
         // Sign token

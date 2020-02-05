@@ -2,6 +2,7 @@ const bodyParser = require("body-parser");
 const compression = require("compression");
 const cors = require("cors");
 const express = require("express");
+const mongoose = require("mongoose");
 const Joi = require("@hapi/joi");
 const { HttpError, ObjectNotExistError } = require("./libs/errors");
 const expressMongoDb = require("./middlewares/express_mongo_db");
@@ -17,6 +18,14 @@ const schema = require("./schema");
 const setupGraphql = require("./utils/setup_graphql");
 
 const { REDIS_URL, CORS_ANY } = process.env;
+const { MONGODB_URI, MONGODB_DBNAME } = process.env;
+
+mongoose.connect(MONGODB_URI, {
+    dbName: MONGODB_DBNAME,
+    useNewUrlParser: true,
+    useCreateIndex: true,
+    useFindAndModify: false,
+});
 
 const app = express();
 
