@@ -1,4 +1,8 @@
 const Joi = require("@hapi/joi");
+const { ObjectId } = require("mongodb");
+const { ObjectNotExistError } = require("../libs/errors");
+const EMAIL_STATUS = require("./email_status");
+
 /*
  * User {
  *   _id            : ObjectId!
@@ -56,7 +60,7 @@ class UserModel {
 
         const new_user = {
             ...user,
-            email_status: "UNVERIFIED",
+            email_status: EMAIL_STATUS.UNVERIFIED,
         };
 
         await this.collection.insertOne(new_user);
@@ -78,9 +82,37 @@ class UserModel {
             );
         }
     }
+
+    /**
+     * 根據 id 增加 time_and_salary_count
+     * @param {string} id - user id
+     */
+    async increaseSalaryWorkTimeCount(id) {
+        const field = "time_and_salary_count";
+        return await this._increaseField(field, id);
+    }
+
+    async _increaseField(field, id) {
+        if (!ObjectId.isValid(id)) {
+            throw new ObjectNotExistError("該使用者不存在");
+        }
+
+        return await this.collection.findOneAndUpdate(
+            { _id: new ObjectId(id) },
+            {
+                $inc: {
+                    [field]: 1,
+                },
+            },
+            {
+                returnOriginal: false,
+                upsert: true,
+            }
+        );
+    }
 }
 
 module.exports = UserModel;
-module.exports.UNVERIFIED = "UNVERIFIED";
-module.exports.SENT_VERIFICATION_LINK = "SENT_VERIFICATION_LINK";
-module.exports.VERIFIED = "VERIFIED";
+module.exports.UNVERIFIED = EMAIL_STATUS.UNVERIFIED;
+module.exports.SENT_VERIFICATION_LINK = EMAIL_STATUS.SENT_VERIFICATION_LINK;
+module.exports.VERIFIED = EMAIL_STATUS.VERIFIED;
